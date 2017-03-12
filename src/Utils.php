@@ -5,47 +5,6 @@ namespace Streams;
 class Utils
 {
     /**
-     * A constant holding the minimum value a byte can
-     * have, -2^7.
-     */
-    const BYTE_MIN_VALUE = -128;
-    /**
-     * A constant holding the maximum value a byte can
-     * have, 2^7-1.
-     */
-    const BYTE_MAX_VALUE = 127;
-    /**
-     * A constant holding the minimum value a short can
-     * have, -2^15.
-     */
-    const SHORT_MIN_VALUE = -32768;
-    /**
-     * A constant holding the maximum value a short can
-     * have, 2^15-1.
-     */
-    const SHORT_MAX_VALUE = 32767;
-    /**
-     * A constant holding the minimum value an int can
-     * have, -2^31.
-     */
-    const INTEGER_MIN_VALUE = -2147483648;
-    /**
-     * A constant holding the maximum value an int can
-     * have, 2^31-1.
-     */
-    const INTEGER_MAX_VALUE = 2147483647;
-    /**
-     * A constant holding the minimum value a long can
-     * have, -2^63.
-     */
-    const LONG_MIN_VALUE = -9223372036854775808;
-    /**
-     * A constant holding the maximum value a long can
-     * have, 2^63-1.
-     */
-    const LONG_MAX_VALUE = 9223372036854775807;
-
-    /**
      * Rounds X up to the next multiple of Y.
      * @param int $x
      * @param int $y
@@ -90,38 +49,70 @@ class Utils
     }
 
     /**
-     * Convert string to double
      * @param string $str
      * @return double
+     * @throws \Exception
      */
     public static function stringToDouble($str)
     {
-        $data = unpack('d', pack('A8', $str));
-        return $data[1];
+        if (strlen($str) < 8) {
+            throw new \Exception('String must be a 8 length');
+        }
+        return unpack('d', pack('A8', $str))[1];
     }
 
     /**
-     * Convert bytes to integer
      * @param array $bytes
+     * @param bool $unsigned
      * @return int
      */
-    public static function bytesToInt(array $bytes)
+    public static function bytesToInt(array $bytes, $unsigned = true)
     {
-        return $bytes[3] << 24 | $bytes[2] << 16 | $bytes[1] << 8 | $bytes[0];
+//        $bytes = array_reverse($bytes);
+        $value = 0;
+        foreach ($bytes as $i => $b) {
+            $value |= $b << $i * 8;
+        }
+        return $unsigned ? $value : self::unsignedToSigned($value, count($bytes) * 8);
     }
 
     /**
-     * Convert integer to bytes
      * @param $int
+     * @param int $size
      * @return array
      */
-    public static function intToBytes($int)
+    public static function intToBytes($int, $size = 32)
     {
-        return [
-            0xFF & $int >> 0,
-            0xFF & $int >> 8,
-            0xFF & $int >> 16,
-            0xFF & $int >> 24
-        ];
+        $size = self::roundUp($size, 8);
+        $bytes = [];
+        for ($i = 0; $i < $size; $i += 8) {
+            $bytes[] = 0xFF & $int >> $i;
+        }
+//        $bytes = array_reverse($bytes);
+        return $bytes;
+    }
+
+    /**
+     * @param int $value
+     * @param int $size
+     * @return string
+     */
+    public static function unsignedToSigned($value, $size = 32)
+    {
+        $size = self::roundUp($size, 8);
+        if (bccomp($value, bcpow(2, $size - 1)) >= 0) {
+            $value = bcsub($value, bcpow(2, $size));
+        }
+        return $value;
+    }
+
+    /**
+     * @param int $value
+     * @param int $size
+     * @return string
+     */
+    public static function signedToUnsigned($value, $size = 32)
+    {
+        return $value + bcpow(2, $size);
     }
 }

@@ -7,10 +7,7 @@ class Stream
     /**
      * @var array
      */
-    public $options = [
-        'default_stream' => 'php://temp',
-        'default_stream_mode' => 'r+',
-    ];
+    public $options = [];
 
     /**
      * @var resource

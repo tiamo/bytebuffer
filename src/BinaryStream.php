@@ -44,7 +44,7 @@ class BinaryStream extends Stream
      * @param string $value
      * @param string|int $length
      * @param string $charset
-     * @return int or false if no data
+     * @return int
      */
     public function writeString($value, $length = '*', $charset = null)
     {
@@ -59,25 +59,19 @@ class BinaryStream extends Stream
     /**
      * Read bytes as string
      * @param int $length
-     * @param int $round
-     * @param null $charset
-     * @return false|string
+     * @param string $charset
+     * @return string
      */
-    public function readString($length, $round = 0, $charset = null)
+    public function readString($length, $charset = null)
     {
-        if ($bytes = $this->readBytes($length)) {
-            if ($round) {
-                $this->skip(Utils::roundUp($length, $round) - $length);
-            }
-            $str = Utils::bytesToString($bytes);
-            if ($charset) {
-                $str = iconv($charset, 'utf8', $str);
-            } elseif ($this->charset) {
-                $str = iconv($this->charset, 'utf8', $str);
-            }
-            return $str;
+        $bytes = $this->read($length);
+        $value = unpack('A' . $length, $bytes)[1];
+        if ($charset) {
+            $value = iconv($charset, 'utf8', $value);
+        } elseif ($this->charset) {
+            $value = iconv($this->charset, 'utf8', $value);
         }
-        return false;
+        return $value;
     }
 
     /**
@@ -87,21 +81,12 @@ class BinaryStream extends Stream
      */
     public function writeInt($value, $size = 32)
     {
-        $size = Utils::roundUp($size, 8);
-        if (is_array($value)) {
-            $values = $value;
-        } else {
-            $values = [];
-            for ($i = 0; $i < $size; $i += 8) {
-                $values[] = $value >> $i;
-            }
-        }
+        $bytes = Utils::intToBytes($value, $size);
         if (!$this->isLittleEndian) {
-            $values = array_reverse($values);
+            $bytes = array_reverse($bytes);
         }
-        array_unshift($values, 'C*');
-        $bytes = call_user_func_array('pack', $values);
-        return $this->write($bytes);
+        array_unshift($bytes, 'C*');
+        return $this->write(call_user_func_array('pack', $bytes));
     }
 
     /**
@@ -141,13 +126,7 @@ class BinaryStream extends Stream
                 }
                 break;
         }
-        if ($unsigned) {
-            return $value;
-        }
-        if (bccomp($value, bcpow(2, $size - 1)) >= 0) {
-            $value = bcsub($value, bcpow(2, $size));
-        }
-        return $value;
+        return $unsigned ? $value : Utils::unsignedToSigned($value, $size);
     }
 
     /**
