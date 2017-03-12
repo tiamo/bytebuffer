@@ -1,0 +1,32 @@
+{
+  "name": "tiamo/streams",
+  "description": "PHP Streams",
+  "keywords": [
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Kornienko Vladislav",
+      "email": "vk.tiamo@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=5.3.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~4.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Streams\\": "src/",
+      "Streams\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0.x-dev"
+    }
+  }
+}
