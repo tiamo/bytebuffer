@@ -7,6 +7,20 @@ A PHP library for reading and writing binary streams.
 * PHP 5.3.0 and up.
 * bcmath extension
 
+## Installation
+
+The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
+
+Either run
+```
+php composer.phar require --prefer-dist tiamo/bytebuffer "*"
+```
+or add
+```
+"tiamo/bytebuffer": "*"
+```
+to the require section of your `composer.json` file.
+
 ## Usage
 
 Writer example:
