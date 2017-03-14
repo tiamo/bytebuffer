@@ -6,6 +6,7 @@ A PHP library for reading and writing binary streams.
 ## Requirements
 * PHP 5.3.0 and up.
 * bcmath extension
+
 ##Usage
 
 Writer example:
@@ -68,8 +69,9 @@ if ($bytes[0] == 0xff && $bytes[1] == 0xd8) {
    echo 'valid jpeg!';
 }
 ```
+
 ##TODO
-- tests
+* tests
 
 ## License
 Licensed under the [MIT license](http://opensource.org/licenses/MIT).
