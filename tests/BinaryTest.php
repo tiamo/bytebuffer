@@ -1,13 +1,10 @@
 <?php
 
-namespace Streams\Tests;
+namespace BinStream\Tests;
 
 use PHPUnit\Framework\TestCase;
 
-class CsvTest extends TestCase
+class BinaryTest extends TestCase
 {
-    public function writeTest()
-    {
-
-    }
+    // TODO:
 }

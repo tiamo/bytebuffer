@@ -1,6 +1,6 @@
 <?php
 
-namespace Streams;
+namespace ByteBuffer;
 
 class Stream
 {
@@ -10,9 +10,14 @@ class Stream
     public $options = [];
 
     /**
+     * @var bool
+     */
+    public $isLittleEndian = true;
+
+    /**
      * @var resource
      */
-    protected $_stream;
+    protected $_handle;
 
     /**
      * Stream constructor.
@@ -24,8 +29,8 @@ class Stream
         if (!is_resource($stream)) {
             throw new \InvalidArgumentException('Stream must be a resource');
         }
-        $this->_stream = $stream;
-        $this->options = array_merge($this->options, $options);
+        $this->_handle = $stream;
+        $this->options = $options;
     }
 
     /**
@@ -61,7 +66,7 @@ class Stream
      */
     public function getMetaData()
     {
-        return stream_get_meta_data($this->_stream);
+        return stream_get_meta_data($this->_handle);
     }
 
     /**
@@ -70,7 +75,7 @@ class Stream
      */
     public function getResource()
     {
-        return $this->_stream;
+        return $this->_handle;
     }
 
     /**
@@ -79,10 +84,10 @@ class Stream
      */
     public function size()
     {
-        $currPos = ftell($this->_stream);
-        fseek($this->_stream, 0, SEEK_END);
-        $length = ftell($this->_stream);
-        fseek($this->_stream, $currPos, SEEK_SET);
+        $currPos = ftell($this->_handle);
+        fseek($this->_handle, 0, SEEK_END);
+        $length = ftell($this->_handle);
+        fseek($this->_handle, $currPos, SEEK_SET);
         return $length;
     }
 
@@ -96,7 +101,7 @@ class Stream
     public function allocate($length, $skip = true)
     {
         $stream = fopen('php://memory', 'r+');
-        if (stream_copy_to_stream($this->_stream, $stream, $length)) {
+        if (stream_copy_to_stream($this->_handle, $stream, $length)) {
             if ($skip) {
                 $this->skip($length);
             }
@@ -117,48 +122,9 @@ class Stream
             throw new \InvalidArgumentException('Invalid resource type');
         }
         if ($length) {
-            return stream_copy_to_stream($resource, $this->_stream, $length);
+            return stream_copy_to_stream($resource, $this->_handle, $length);
         } else {
-            return stream_copy_to_stream($resource, $this->_stream);
-        }
-    }
-
-    /**
-     * Reads remainder of a stream into a string
-     * @param int $length The maximum bytes to read. Defaults to -1 (read all the remaining buffer).
-     * @return string a string or false on failure.
-     */
-    public function read($length = null)
-    {
-        return stream_get_contents($this->_stream, $length, $this->offset());
-    }
-
-    /**
-     * Read one line from the stream.
-     * @param int $length Maximum number of bytes to read.
-     * @param string $ending Line ending to stop at. Defaults to "\n".
-     * @return string The data read from the stream
-     */
-    public function readLine($length = null, $ending = "\n")
-    {
-        if ($length === null) {
-            $length = $this->size();
-        }
-        return stream_get_line($this->_stream, $length, $ending);
-    }
-
-    /**
-     * Write data to stream.
-     * @param string $data
-     * @param int $length
-     * @return int
-     */
-    public function write($data, $length = null)
-    {
-        if ($length === null) {
-            return fwrite($this->_stream, $data);
-        } else {
-            return fwrite($this->_stream, $data, $length);
+            return stream_copy_to_stream($resource, $this->_handle);
         }
     }
 
@@ -168,7 +134,7 @@ class Stream
      */
     public function offset()
     {
-        return ftell($this->_stream);
+        return ftell($this->_handle);
     }
 
     /**
@@ -182,7 +148,7 @@ class Stream
      */
     public function seek($offset, $whence = SEEK_SET)
     {
-        return fseek($this->_stream, $offset, $whence);
+        return fseek($this->_handle, $offset, $whence);
     }
 
     /**
@@ -191,7 +157,7 @@ class Stream
      */
     public function rewind()
     {
-        return rewind($this->_stream);
+        return rewind($this->_handle);
     }
 
     /**
@@ -204,6 +170,224 @@ class Stream
     }
 
     /**
+     * Reads remainder of a stream into a string
+     * @param int $length The maximum bytes to read. Defaults to -1 (read all the remaining buffer).
+     * @return string a string or false on failure.
+     */
+    public function read($length = null)
+    {
+        return stream_get_contents($this->_handle, $length, $this->offset());
+    }
+
+    /**
+     * Read one line from the stream.
+     * @param int $length Maximum number of bytes to read.
+     * @param string $ending Line ending to stop at. Defaults to "\n".
+     * @return string The data read from the stream
+     */
+    public function readLine($length = null, $ending = "\n")
+    {
+        if ($length === null) {
+            $length = $this->size();
+        }
+        return stream_get_line($this->_handle, $length, $ending);
+    }
+
+    /**
+     * Write data to stream.
+     * @param string $data
+     * @param int $length
+     * @return int
+     */
+    public function write($data, $length = null)
+    {
+        if ($length === null) {
+            return fwrite($this->_handle, $data);
+        } else {
+            return fwrite($this->_handle, $data, $length);
+        }
+    }
+
+    /**
+     * Write array bytes
+     * @param $bytes
+     * @return int
+     */
+    public function writeBytes($bytes)
+    {
+        array_unshift($bytes, 'C*');
+        return $this->write(call_user_func_array('pack', $bytes));
+    }
+
+    /**
+     * Reads $length bytes from an input stream.
+     * @param $length
+     * @return array|false
+     */
+    public function readBytes($length)
+    {
+        $bytes = $this->read($length);
+        if ($bytes !== false) {
+            return array_values(unpack('C*', $bytes));
+        }
+        return false;
+    }
+
+    /**
+     * Write string data
+     * @param string $value
+     * @param string|int $length
+     * @param string $charset
+     * @return int
+     */
+    public function writeString($value, $length = '*', $charset = null)
+    {
+        if ($charset) {
+            $value = iconv('utf8', $charset, $value);
+        } elseif (isset($this->options['charset'])) {
+            $value = iconv('utf8', $this->options['charset'], $value);
+        }
+        return $this->write(pack('A' . $length, $value));
+    }
+
+    /**
+     * Read bytes as string
+     * @param int $length
+     * @param string $charset
+     * @return string
+     */
+    public function readString($length, $charset = null)
+    {
+        $bytes = $this->read($length);
+        $value = unpack('A' . $length, $bytes)[1];
+        if ($charset) {
+            $value = iconv($charset, 'utf8', $value);
+        } elseif ($this->options['charset']) {
+            $value = iconv($this->options['charset'], 'utf8', $value);
+        }
+        return $value;
+    }
+
+    /**
+     * @param int|array $value
+     * @param int $size
+     * @return int
+     */
+    public function writeInt($value, $size = 32)
+    {
+        $bytes = Utils::intToBytes($value, $size);
+        if (!$this->isLittleEndian) {
+            $bytes = array_reverse($bytes);
+        }
+        array_unshift($bytes, 'C*');
+        return $this->write(call_user_func_array('pack', $bytes));
+    }
+
+    /**
+     * @param int $size
+     * @param bool $unsigned
+     * @return int
+     */
+    public function readInt($size = 32, $unsigned = true)
+    {
+        $size = Utils::roundUp($size, 8);
+        $data = $this->read($size / 8);
+        $value = 0;
+        switch ($size) {
+            case 8:
+                $value = unpack('C', $data)[1];
+                break;
+            case 16:
+                $value = unpack($this->isLittleEndian ? 'v' : 'n', $data)[1];
+                break;
+            case 24:
+                $bytes = unpack('C3', $data);
+                if ($this->isLittleEndian) {
+                    $value = $bytes[1] | $bytes[2] << 8 | $bytes[3] << 16;
+                } else {
+                    $value = $bytes[1] << 16 | $bytes[2] << 8 | $bytes[3];
+                }
+                break;
+            case 32:
+                $value = unpack($this->isLittleEndian ? 'V' : 'N', $data)[1];
+                break;
+            case 64:
+                $ret = unpack($this->isLittleEndian ? 'V2' : 'N2', $data);
+                if ($this->isLittleEndian) {
+                    $value = bcadd($ret[1], bcmul($ret[2], 0xffffffff + 1));
+                } else {
+                    $value = bcadd($ret[2], bcmul($ret[1], 0xffffffff + 1));
+                }
+                break;
+        }
+        return $unsigned ? $value : Utils::unsignedToSigned($value, $size);
+    }
+
+    /**
+     * @param $value
+     * @return int
+     */
+    public function writeBool($value)
+    {
+        return $this->writeInt($value ? 1 : 0, 8);
+    }
+
+    /**
+     * @return int
+     */
+    public function readBool()
+    {
+        return $this->readInt(8);
+    }
+
+    /**
+     * @param $value
+     * @return int
+     */
+    public function writeFloat($value)
+    {
+        $bytes = pack('f', $value);
+        return $this->write($bytes);
+    }
+
+    /**
+     * @return int
+     */
+    public function readFloat()
+    {
+        $bytes = $this->read(4);
+        return unpack('f', $bytes)[1];
+    }
+
+    /**
+     * @param $value
+     * @return int
+     */
+    public function writeDouble($value)
+    {
+        $bytes = pack('d', $value);
+        return $this->write($bytes);
+    }
+
+    /**
+     * @return int
+     */
+    public function readDouble()
+    {
+        $bytes = $this->read(8);
+        return unpack('d', $bytes)[1];
+    }
+
+    /**
+     * @param $length
+     * @return int
+     */
+    public function writeNull($length)
+    {
+        return $this->write(pack('x' . $length));
+    }
+
+    /**
      * Save stream
      * @param string $file Path to the file where to write the data.
      * @return int The function returns the number of bytes that were written to the file, or false on failure.
@@ -211,7 +395,7 @@ class Stream
     public function save($file)
     {
         $this->rewind();
-        return file_put_contents($file, $this->_stream);
+        return file_put_contents($file, $this->_handle);
     }
 
     /**
@@ -219,8 +403,8 @@ class Stream
      */
     public function close()
     {
-        if (is_resource($this->_stream)) {
-            fclose($this->_stream);
+        if (is_resource($this->_handle)) {
+            fclose($this->_handle);
         }
     }
 

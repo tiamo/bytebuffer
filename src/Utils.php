@@ -1,6 +1,6 @@
 <?php
 
-namespace Streams;
+namespace ByteBuffer;
 
 class Utils
 {
@@ -68,7 +68,7 @@ class Utils
      */
     public static function bytesToInt(array $bytes, $unsigned = true)
     {
-//        $bytes = array_reverse($bytes);
+        $bytes = array_reverse($bytes);
         $value = 0;
         foreach ($bytes as $i => $b) {
             $value |= $b << $i * 8;
@@ -88,7 +88,7 @@ class Utils
         for ($i = 0; $i < $size; $i += 8) {
             $bytes[] = 0xFF & $int >> $i;
         }
-//        $bytes = array_reverse($bytes);
+        $bytes = array_reverse($bytes);
         return $bytes;
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Streams;
+namespace ByteBuffer;
 
 class Exception extends \Exception
 {

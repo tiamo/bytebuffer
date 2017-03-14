@@ -1,7 +1,8 @@
 {
-  "name": "tiamo/streams",
-  "description": "PHP Streams",
+  "name": "tiamo/bytebuffer",
+  "description": "PHP Byte Buffer",
   "keywords": [
+    "binary", "parser", "buffer", "stream"
   ],
   "license": "MIT",
   "authors": [
@@ -21,8 +22,8 @@
   },
   "autoload": {
     "psr-4": {
-      "Streams\\": "src/",
-      "Streams\\Tests\\": "tests/"
+      "ByteBuffer\\": "src/",
+      "ByteBuffer\\Tests\\": "tests/"
     }
   },
   "extra": {
