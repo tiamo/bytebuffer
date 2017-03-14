@@ -7,7 +7,7 @@ A PHP library for reading and writing binary streams.
 * PHP 5.3.0 and up.
 * bcmath extension
 
-##Usage
+## Usage
 
 Writer example:
 ```php
@@ -70,7 +70,7 @@ if ($bytes[0] == 0xff && $bytes[1] == 0xd8) {
 }
 ```
 
-##TODO
+## TODO
 * tests
 
 ## License
