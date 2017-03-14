@@ -25,7 +25,7 @@ to the require section of your `composer.json` file.
 
 Writer example:
 ```php
-// create new empty strem (php://temp)
+// create a new empty stream (php://temp)
 $stream = \ByteBuffer\Stream::factory('', [
     'charset' => 'cp1251' // optional, default string data charset
 ]);
