@@ -1,4 +1,5 @@
-#ByteBuffer
+ByteBuffer
+====
 
 A PHP library for reading and writing binary streams.
 
